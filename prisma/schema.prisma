@@ -1,0 +1,91 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model Post {
+  id              String    @id @default(cuid())
+  title           String
+  content         String
+  difficulty      String?
+  language        String?
+
+  authorId        String
+  authorName      String
+  authorAvatarUrl String?
+  authorRole      String?
+  authorIsPremium Boolean   @default(false)
+
+  score           Int       @default(0)
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  tags            PostTag[]
+  comments        Comment[]
+  votes           Vote[]
+
+  @@index([createdAt])
+  @@index([score])
+  @@index([authorId])
+}
+
+model Tag {
+  id        String   @id @default(cuid())
+  name      String   @unique
+  createdAt DateTime @default(now())
+
+  posts     PostTag[]
+}
+
+model PostTag {
+  postId String
+  tagId  String
+
+  post   Post @relation(fields: [postId], references: [id], onDelete: Cascade)
+  tag    Tag  @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([postId, tagId])
+  @@index([tagId])
+}
+
+model Comment {
+  id              String    @id @default(cuid())
+  postId          String
+
+  authorId        String
+  authorName      String
+  authorAvatarUrl String?
+  authorRole      String?
+  authorIsPremium Boolean   @default(false)
+
+  content         String
+
+  parentId        String?
+  parent          Comment?  @relation("CommentReplies", fields: [parentId], references: [id], onDelete: Cascade)
+  replies         Comment[] @relation("CommentReplies")
+
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  post            Post      @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@index([postId, createdAt])
+  @@index([parentId])
+}
+
+model Vote {
+  postId    String
+  userId    String
+  value     Int
+  createdAt DateTime @default(now())
+
+  post      Post     @relation(fields: [postId], references: [id], onDelete: Cascade)
+
+  @@id([postId, userId])
+  @@index([userId])
+}
